@@ -1,0 +1,105 @@
+% Program to estimate nuclear tension from thermal membrane fluctuations
+% Abigail Loneker, Wells Lab, UPenn
+
+% This program requires download of thresh_tool
+% Robert Bemis (2023). Thresholding Tool (https://www.mathworks.com/matlabcentral/fileexchange/6770-thresholding-tool), 
+% MATLAB Central File Exchange. Retrieved February 24, 2023
+
+
+clc;
+clear;
+close
+
+% Change pathstem to location of tif stacks, time series images of chromatin or nuclear stain
+pathstem = "C:\Users\Abby\Desktop\NuclearFluctuationTest\SampleImages";
+nuclearFiles = dir(fullfile(pathstem,'*.tif'));
+pixelSize = 42.51/512; % change to pixel size in your images
+
+for i=1:length(nuclearFiles)
+
+    clearvars imageStack
+
+    fname = nuclearFiles(i).name;
+    filestem = extractBefore(fname,'.tif');
+
+    info = imfinfo(fullfile(pathstem,fname));
+    numberOfImages = length(info);
+    cropYN = 'N'; % change depending on whether you want to crop out single nuclei
+    
+    % Reads in image stack and crops to single nuclei
+    for k = 1:numberOfImages
+        currentImage = imread(fullfile(pathstem,fname), k, 'Info', info);
+        if k == 1 && cropYN == 'Y'
+            [cropImage, rectout] = imcrop(currentImage);
+        elseif k ~= 1 && cropYN =='Y'
+            cropImage = imcrop(currentImage,rectout);
+        else
+            cropImage = currentImage;
+        end
+        imageStack(:,:,k) = cropImage;
+    end
+    
+    % Generates mask from fluorescent image
+    smoothedNuc = imgaussfilt(imageStack(:,:,1),2); % smooths fluorescent image
+    [level, smoothMask] = thresh_tool(smoothedNuc); % interactive thresholding tool
+    
+    smoothedNucs = imgaussfilt(imageStack, 2); % smooths stack
+    nucleiMask = smoothedNucs > level;
+    for j = 1:numberOfImages 
+       nucleiMask(:,:,j) = imfill(nucleiMask(:,:,j),'holes');
+    end
+   
+    writeImageMovie(pathstem,filestem,smoothedNucs)
+    writeMaskMovie(pathstem,filestem,nucleiMask)
+    minSize = 200;
+    
+    [membrane, nucArea] = calcNuclearFluctuations(nucleiMask, minSize);
+    
+    nucAreaArray(i) = nucArea*pixelSize^2;
+    angleMatrix = -180:1:179;
+    membrane = cell2mat(membrane);
+    stDevMembrane = std(membrane,'omitnan');
+    meanPosition = mean(membrane,'omitnan');
+    deviation = membrane - meanPosition;
+    deviationThresh = mean(deviation)+3*std(deviation);
+    deviation(deviation>=deviationThresh) = nan;
+    deviationMicrons = deviation*pixelSize;
+    dispSq = deviationMicrons.^2;
+    msd = mean(dispSq,1,'omitnan');
+    group(i) = string(filestem);
+    meanMSD(i) = mean(msd);
+end
+
+outputTable = table;
+outputTable = addvars(outputTable,group','NewVariableNames','File');
+outputTable = addvars(outputTable,meanMSD','NewVariableNames','meanMSD');
+outputTable = addvars(outputTable, nucAreaArray', 'NewVariableNames','AreaMicrons');
+outputfileName = ['NuclearFluctuation_FinalMSD.xls'];
+outputPath = fullfile(pathstem,outputfileName);
+writetable(outputTable,outputPath)
+
+function writeImageMovie(pathstem, filestem,imageStack)
+  v = VideoWriter(fullfile(pathstem,[filestem,'_DAPI.avi']));
+  open(v)
+  for i=1:size(imageStack,3)
+
+
+
+    tempImage = mat2gray(imageStack(:,:,i));
+    writeVideo(v,tempImage)
+
+    
+  end
+  close(v)
+end
+
+function writeMaskMovie(pathstem, filestem,nucleiMask)
+  v = VideoWriter(fullfile(pathstem,[filestem,'.avi']));
+  open(v)
+  for i=1:size(nucleiMask,3)
+      tempImage = double(nucleiMask(:,:,i));
+      writeVideo(v,tempImage) 
+  end
+  close(v)
+end
+
