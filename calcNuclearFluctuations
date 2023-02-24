@@ -1,0 +1,61 @@
+% Function to calculate nuclear membrane fluctuations based on nuclear irregularity measurement
+% Abigail Loneker, Wells Lab, UPenn
+
+% [downsampledMembrane, nucArea]=calcNuclearFluctuations(nucleiMask, minSize)
+% nucleiMask = binary tif stack of nucleus outline
+% minSize = minimum nuclear size
+% downsampledMembrane = membrane position at every 10degrees for every timepoint
+% nucArea = nuclear area
+
+
+function [downsampledMembrane, nucArea] = calcNuclearFluctuations(nucleiMask, minSize)
+
+n = 1;
+interval = size(nucleiMask,3);
+membrane = cell(interval, 1);
+angles = cell(interval, 1);
+downsampledMembrane = cell(interval, 1);
+
+for timepoint = 1:1:interval
+
+    nuclei = bwconncomp(nucleiMask(:,:,timepoint)); 
+    L = labelmatrix(nuclei);
+    stats = regionprops(L,'Area');
+    idx = find([stats.Area] > minSize); 
+    nuclei = ismember(L,idx);
+
+    if timepoint == 1
+    % Finds centerpoints, these are kept constant over time
+    stats = regionprops('table',nuclei,'Centroid','EquivDiameter','Area','Circularity','Eccentricity','Solidity'); % Quantifies image region properties 
+    centers = cat(1,stats.Centroid); % Makes array of center points
+    nuc = size(centers,2);
+    nucArea = stats.Area;
+    end
+    
+
+    % Finds and plots boundries of nuclei
+    B = bwboundaries(nuclei); 
+
+    bound = B{n}; % pulls out individual boundary
+
+    xCenter = centers(1,1);
+    yCenter = centers(1,2);
+    x = bound(:,2);
+    y = bound(:,1);
+    radialDistances = sqrt((x - xCenter) .^ 2 + (y - yCenter) .^ 2);
+    radialDistances(radialDistances==0) = NaN;
+    distances = radialDistances(~isnan(radialDistances));
+    membrane{timepoint} = distances';
+    angles{timepoint} = [atan2d(y - yCenter, x - xCenter)]';  
+    % Find out which one is closest to every 10 degrees.
+    counter = 1;
+    indexesAtDeltaAngles = zeros(size(-180 : 1 : 179));
+    for angle = -180 : 1 : 179
+        angleDifference = abs(angles{timepoint} - angle);
+        [~, index] = min(angleDifference);
+        indexesAtDeltaAngles(counter) = index;
+        counter = counter + 1;
+    end
+
+    downsampledMembrane{timepoint} = distances(indexesAtDeltaAngles)';
+end
