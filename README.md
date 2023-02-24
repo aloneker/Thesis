@@ -1,5 +1,5 @@
 # Thesis
-This repository will house all image analysis programs related to my thesis.
+This repository will house all image analysis programs related to my thesis, INVESTIGATING THE ROLE OF LIPID DROPLETS AS INTRACELLULAR MECHANICAL STRESSORS IN NON-ALCOHOLIC FATTY LIVER DISEASE, Abigail Erin Loneker, 2023. 
 
 calcNuclearIrregulairty is a function to quantify nuclear deformation, globally with the nuclear irregularity measure, and locally by estimating curvature along the linearized membrane boundary. Additional details on the rationale for this can be found in a preprint available on bioRxiv https://doi.org/10.1101/2022.08.27.505524, or in the text of my thesis (to be made available through UPenn Scholarly Commons https://repository.upenn.edu/etd.html)
 
