@@ -11,8 +11,8 @@ clear;
 close;
 
 
-pathstem = "C:\Users\Abby\Downloads\2023_01_10_Lipid Droplets in PAA\2023_01_10_Lipid Droplets in PAA\Titchenell Collab\HFD 3"; %% Change to match whgere images are stored
-nuclearFiles = dir(fullfile(pathstem,'*.tif')); % Images should be .tif stacks with the uncompressed image first
+pathstem = "C:\Users\Abby\Downloads\2023_01_10_Lipid Droplets in PAA\2023_01_10_Lipid Droplets in PAA\Titchenell Collab\HFD 3"; % Change to match where images are stored
+nuclearFiles = dir(fullfile(pathstem,'*.tif')); % Images should be .tif stacks with the uncompressed image first, bleach correction applied in imageJ
 minSize = 5; % minimum size nucleus area in pixels
 maxSize = 5000; % maximum size nucleus in pixels
 pixSize = 562.56/1920; % pixel size in microns
