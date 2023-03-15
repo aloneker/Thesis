@@ -33,7 +33,7 @@ for i=1:length(nuclearFiles)
 
     for k = 1:numberOfImages
         currentImage = imread(fullfile(pathstem,filestem), k, 'Info', info);
-        imageStack(:,:,k) = currentImage;
+        imageStack(:,:,k) = currentImage; 
     end
     
     stiffnessTable = table;
